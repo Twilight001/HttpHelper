@@ -8,6 +8,7 @@ import java.lang.reflect.Type;
 /**
  * Created by twilight on 12/4/15.
  */
+@Deprecated
 public class DefaultConvert<T> implements IConvertString<T>{
     @Override
     public T convert(String s) {
