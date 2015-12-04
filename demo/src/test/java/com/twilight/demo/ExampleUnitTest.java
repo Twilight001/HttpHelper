@@ -1,4 +1,4 @@
-package com.twilight.http.demo;
+package com.twilight.demo;
 
 import org.junit.Test;
 

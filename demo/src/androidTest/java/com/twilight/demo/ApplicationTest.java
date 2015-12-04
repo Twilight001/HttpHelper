@@ -1,4 +1,4 @@
-package com.twilight.http.demo;
+package com.twilight.demo;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;
