@@ -7,6 +7,7 @@
 5.cache
 6.cancel request
 7.https
-8.多数据类型支持
+8.多数据类型支持 流
 9.header
+10.Thread
 
