@@ -47,26 +47,40 @@ public class RequestHelper {
     }
 
     public void post(String url, RequestParams params, final AbstractResponseHandler handler) {
-        post(null, url, params, handler);
+        post(null, null, url, params, handler);
     }
 
-    public void post(Object tag, String url, RequestParams params, final AbstractResponseHandler handler) {
-        createRequest(tag, RequestMethod.METHOD_POST, url, params, handler);
+    public void post(Map<String, String> headers, String url, RequestParams params, final AbstractResponseHandler handler) {
+        post(null, headers, url, params, handler);
     }
 
-    public void get(Object tag, String url, AbstractResponseHandler handler) {
-        createRequest(tag, RequestMethod.METHOD_GET, url, null, handler);
+    public void post(Object tag, Map<String, String> headers, String url, RequestParams params, final AbstractResponseHandler handler) {
+        createRequest(tag, RequestMethod.METHOD_POST, headers, url, params, handler);
+    }
+
+    public void get(Object tag, Map<String, String> headers, String url, AbstractResponseHandler handler) {
+        createRequest(tag, RequestMethod.METHOD_GET, headers, url, null, handler);
     }
 
     public void get(String url, AbstractResponseHandler handler) {
-        get(null, url, handler);
+        get(null, null, url, handler);
     }
 
-    private void createRequest(Object tag, String method, String url, RequestParams params, AbstractResponseHandler handler) {
+    public void get(Map<String, String> headers, String url, AbstractResponseHandler handler) {
+        get(null, headers, url, handler);
+    }
+
+    private void createRequest(Object tag, String method, Map<String, String> headers, String url, RequestParams params, AbstractResponseHandler handler) {
         Request.Builder builder = new Request.Builder();
         if (tag != null)
             builder.tag(tag);
         builder.url(url);
+        if (headers != null && headers.size() > 0) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                builder.addHeader(entry.getKey(), entry.getValue());
+            }
+        }
+
         if (params != null) {
             MultipartBuilder paramsBuilder = new MultipartBuilder().type(MultipartBuilder.FORM);
             Map<String, String> strMap = params.getStringParams();
