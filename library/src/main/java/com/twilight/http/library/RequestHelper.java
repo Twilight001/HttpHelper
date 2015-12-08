@@ -47,37 +47,69 @@ public class RequestHelper {
     }
 
     public void post(String url, RequestParams params, final AbstractResponseHandler handler) {
-        MultipartBuilder builder = new MultipartBuilder().type(MultipartBuilder.FORM);
-        Map<String, String> strMap = params.getStringParams();
-        Map<String, RequestParams.FileWrapper> fileMap = params.getFileParams();
+        post(null, null, url, params, handler);
+    }
 
-        if (strMap.size() > 0) {
-            for (Map.Entry<String, String> entry : strMap.entrySet()) {
-                builder.addFormDataPart(entry.getKey(), entry.getValue());
-            }
-        }
-        RequestBody fileBody = null;
-        if (fileMap.size() > 0) {
-            for (Map.Entry<String, RequestParams.FileWrapper> entry : fileMap.entrySet()) {
-                File file = entry.getValue().file;
-                String fileName = file.getName();
-                fileBody = RequestBody.create(MediaType.parse(guessMimeType(fileName)), file);
-                builder.addPart(Headers.of("Content-Disposition",
-                                "form-data; name=\"" + entry.getKey() + "\"; filename=\"" + fileName + "\""),
-                        fileBody);
-            }
-        }
-        //参数
-        Request postRequest = new Request.Builder().url(url).post(builder.build()).build();
-        sendRequest(postRequest, handler);
+    public void post(Map<String, String> headers, String url, RequestParams params, final AbstractResponseHandler handler) {
+        post(null, headers, url, params, handler);
+    }
+
+    public void post(Object tag, Map<String, String> headers, String url, RequestParams params, final AbstractResponseHandler handler) {
+        createRequest(tag, RequestMethod.METHOD_POST, headers, url, params, handler);
+    }
+
+    public void get(Object tag, Map<String, String> headers, String url, AbstractResponseHandler handler) {
+        createRequest(tag, RequestMethod.METHOD_GET, headers, url, null, handler);
     }
 
     public void get(String url, AbstractResponseHandler handler) {
-        Request getRequest = new Request.Builder().url(url).build();
-        sendRequest(getRequest, handler);
+        get(null, null, url, handler);
     }
 
-    private void sendRequest(Request request, final AbstractResponseHandler handler) {
+    public void get(Map<String, String> headers, String url, AbstractResponseHandler handler) {
+        get(null, headers, url, handler);
+    }
+
+    private void createRequest(Object tag, String method, Map<String, String> headers, String url, RequestParams params, AbstractResponseHandler handler) {
+        Request.Builder builder = new Request.Builder();
+        if (tag != null)
+            builder.tag(tag);
+        builder.url(url);
+        if (headers != null && headers.size() > 0) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                builder.addHeader(entry.getKey(), entry.getValue());
+            }
+        }
+
+        if (params != null) {
+            MultipartBuilder paramsBuilder = new MultipartBuilder().type(MultipartBuilder.FORM);
+            Map<String, String> strMap = params.getStringParams();
+            Map<String, RequestParams.FileWrapper> fileMap = params.getFileParams();
+            if (strMap.size() > 0) {
+                for (Map.Entry<String, String> entry : strMap.entrySet()) {
+                    paramsBuilder.addFormDataPart(entry.getKey(), entry.getValue());
+                }
+            }
+            RequestBody fileBody = null;
+            if (fileMap.size() > 0) {
+                for (Map.Entry<String, RequestParams.FileWrapper> entry : fileMap.entrySet()) {
+                    File file = entry.getValue().file;
+                    String fileName = file.getName();
+                    fileBody = RequestBody.create(MediaType.parse(guessMimeType(fileName)), file);
+                    paramsBuilder.addPart(Headers.of("Content-Disposition",
+                                    "form-data; name=\"" + entry.getKey() + "\"; filename=\"" + fileName + "\""),
+                            fileBody);
+                }
+            }
+            builder.method(method, paramsBuilder.build());
+        } else {
+            builder.method(method, null);
+        }
+        Request request = builder.build();
+        sendRequest(request, handler);
+    }
+
+    private void sendRequest(final Request request, final AbstractResponseHandler handler) {
         //start
         handler.onStart();
         getOkHttpClient().newCall(request).enqueue(new Callback() {
@@ -88,16 +120,16 @@ public class RequestHelper {
 
             @Override
             public void onResponse(Response response) {
-                if (response.code() >= 400 && response.code() <= 599) {
+                if (response.code() == 200) {
                     try {
-                        sendFailureMsg(response.request(), new RuntimeException(response.body().string()), handler);
-                    } catch (IOException e) {
+                        sendSuccessMsg(response, handler);
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 } else {
                     try {
-                        sendSuccessMsg(response, handler);
-                    } catch (Exception e) {
+                        sendFailureMsg(response.request(), new RuntimeException(response.body().string()), handler);
+                    } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
@@ -121,5 +153,9 @@ public class RequestHelper {
                 handler.onSuccess(response);
             }
         });
+    }
+
+    public void cancel(Object tag) {
+        getOkHttpClient().cancel(tag);
     }
 }
